@@ -103,7 +103,7 @@ int jacobi(const mbedtls_mpi* A, const mbedtls_mpi* N) {
 //k = 1/2 (1/4 (p - 1) (q - 1) + 1)
 int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
 {
-    mbedtls_mpi pm1, qm1, n, x1, r, x0, tmp;
+    mbedtls_mpi pm1, qm1, tmp;
     mbedtls_mpi_init(&pm1);
     mbedtls_mpi_init(&qm1);
     mbedtls_mpi_init(&tmp);
@@ -113,14 +113,42 @@ int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
     mbedtls_mpi_mul_mpi(&r, &pm1, &qm1);    // (p-1)(q-1)
     mbedtls_mpi_mul_int(&tmp, &r, 1/4);     // 1/4(p-1)(q-1)
     mbedtls_mpi_sub_mpi(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
-    mbedtls_mpi_mul_int(&tmp, &r, 1/2);     // 1/2 (1/4 (p-1)(q-1) + 1)
+    mbedtls_mpi_mul_int(&R, &r, 1/2);     // 1/2 (1/4 (p-1)(q-1) + 1)
 
 }
 
+int encoding(mbedtls_mpi* C, mbedtls_mpi* c2, const mbedtls_mpi* S, 
+    const mbedtls_mpi* C1, const mbedtls_mpi* M, const mbedtls_mpi* N)
+{
+     mbedtls_mpi a, b, n, s, ms, r, tmp;
+
+    mbedtls_mpi_init(&a);
+    mbedtls_mpi_init(&b);
+    mbedtls_mpi_init(&ms);
+
+    mbedtls_mpi_exp_mod(&a, S, C1, N, NULL);    // S^c1 mod N
+    mbedtls_mpi_mul_mpi(&b, &a, M);             // M*S^c1
+    mbedtls_mpi_mod_mpi(&ms, &b, N);            // M*S^c1 mod N
+
+    mbedtls_mpi_read_string(&a , 10, "2");
+    mbedtls_mpi_exp_mod(C, &ms, &a, N, NULL);   // C = M`^ 2 mon N
+    mbedtls_mpi_mod_mpi(c2, &ms, &a);           // c2 = M` mod 2
+}
+
+int decoding(mbedtls_mpi* M, const mbedtls_mpi* k, const mbedtls_mpi* c,
+    const mbedtls_mpi* c1, const mbedtls_mpi*c2, const mbedtls_mpi* n)
+    {
+         mbedtls_mpi p, q, n, s, m, r, tmp, c, c2;
+
+    mbedtls_mpi_init(&n);
+    mbedtls_mpi_init(&p);
+    mbedtls_mpi_init(&q);
+    mbedtls_mpi_init(&r);
+    }
 
 int main()
 {
-    mbedtls_mpi p, q, n, s, m, r, tmp;
+    mbedtls_mpi p, q, n, s, m, r, tmp, c, c2;
 
     mbedtls_mpi_init(&n);
     mbedtls_mpi_init(&p);
@@ -128,6 +156,8 @@ int main()
     mbedtls_mpi_init(&r);
     mbedtls_mpi_init(&s);
     mbedtls_mpi_init(&m);
+    mbedtls_mpi_init(&c);
+    mbedtls_mpi_init(&c2);
     mbedtls_mpi_init(&tmp);
 
     pick_key(&p,&q,&n);
@@ -150,8 +180,9 @@ int main()
             break;
     }
 
-
-    mbedtls_mpi_write_file(NULL, &m, 10, NULL );
+    tmp.p = &c1;
+    encoding(&c, &c2, &s, &tmp, &m, &n);
+    mbedtls_mpi_write_file(NULL, &m, 16, NULL );
 
     return 0;
 }
