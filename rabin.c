@@ -8,13 +8,6 @@
 #define SIZE    512
 #define SIZE_M    128
 
-size_t log2_4_int( size_t n )  
-{    
-  unsigned int ans = 0 ;
-  while( n>>=1 ) ans++;
-  return ans ;  
-}  
-
 static int myrand( void *rng_state, unsigned char *output, size_t len )
 {
     size_t use_len;
@@ -113,9 +106,10 @@ int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
     mbedtls_mpi_sub_int(&pm1, P, 1);        // p-1
     mbedtls_mpi_sub_int(&qm1, Q, 1);        // q-1
     mbedtls_mpi_mul_mpi(&r, &pm1, &qm1);    // (p-1)(q-1)
-    mbedtls_mpi_mul_int(&tmp, &r, 1/4);     // 1/4(p-1)(q-1)
-    mbedtls_mpi_sub_mpi(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
-    mbedtls_mpi_mul_int(&R, &r, 1/2);       // 1/2 (1/4 (p-1)(q-1) + 1)
+    mbedtls_mpi_div_int(&tmp, NULL, &r, 4);     // 1/4(p-1)(q-1)
+    mbedtls_mpi_free(&r);
+    mbedtls_mpi_sub_int(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
+    mbedtls_mpi_div_int(R, NULL, &r, 2);       // 1/2 (1/4 (p-1)(q-1) + 1)
 
 }
 
@@ -136,19 +130,64 @@ int encoding(mbedtls_mpi* C, mbedtls_mpi* c2, const mbedtls_mpi* S,
     mbedtls_mpi_exp_mod(C, &ms, &a, N, NULL);   // C = M`^ 2 mon N
     mbedtls_mpi_mod_mpi(c2, &ms, &a);           // c2 = M` mod 2
 }
+int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
+    const int* C1, const mbedtls_mpi* C2, const mbedtls_mpi* N)
+    {
+    mbedtls_mpi tmp, sc, d, r;
+
+    mbedtls_mpi_init(&d);
+    mbedtls_mpi_init(&tmp);
+    mbedtls_mpi_init(&sc);
+    mbedtls_mpi_init(&r);
+
+    mbedtls_mpi_exp_mod(&d, C, K, N, NULL);     //C^k mod N
+    /*
+     * M = (D_1/4-1)/2 if D_1=0pmod{4}
+     * M = ((N-D_1)/4-1)/2 if D_1=1pmod{4}
+     * M = (D_1/2-1)/2 if D_1=2pmod{4}
+     * M = ((N-D_1/2-1)/2 if D_1=3pmod{4}
+    **/
+    int res;
+    mbedtls_mpi_mod_int(&res, &d, 4);
+    switch(res){
+        case(0):
+            mbedtls_mpi_div_int(&tmp, NULL, &d, 4);
+            mbedtls_mpi_sub_int(&r, &tmp, 1);
+            mbedtls_mpi_div_int(M, NULL, &r, 2);
+            break;
+        case(1):
+            mbedtls_mpi_sub_mpi(&r, &N, &d);
+            mbedtls_mpi_div_int(&tmp, NULL, &r, 4);
+            mbedtls_mpi_sub_int(&r, &tmp, 1);
+            mbedtls_mpi_div_int(M, NULL, &r, 2);
+            break;
+        case(2):
+            mbedtls_mpi_div_int(&tmp, NULL, &d, 2);
+            mbedtls_mpi_sub_int(&r, &tmp, 1);
+            mbedtls_mpi_div_int(M, NULL, &r, 2);
+            break;
+        case(3):
+            mbedtls_mpi_sub_mpi(&r, &N, &d);
+            mbedtls_mpi_div_int(&tmp, NULL, &r, 2);
+            mbedtls_mpi_sub_int(&r, &tmp, 1);
+            mbedtls_mpi_div_int(M, NULL, &r, 2);
+            break;
+    }
+    }
 
 int main()
 {
-    mbedtls_mpi p, q, n, s, m, r, tmp, c, c2;
+    mbedtls_mpi p, q, n, s, m, k, tmp, c, c2, op;
 
     mbedtls_mpi_init(&n);
     mbedtls_mpi_init(&p);
     mbedtls_mpi_init(&q);
-    mbedtls_mpi_init(&r);
+    mbedtls_mpi_init(&k);
     mbedtls_mpi_init(&s);
     mbedtls_mpi_init(&m);
     mbedtls_mpi_init(&c);
     mbedtls_mpi_init(&c2);
+    mbedtls_mpi_init(&op);
     mbedtls_mpi_init(&tmp);
 
     pick_key(&p,&q,&n);
@@ -170,7 +209,7 @@ int main()
             c1 = 1;
             break;
     }
-
+    calculate_k(&k, &p, &q);
     tmp.p = &c1;
     encoding(&c, &c2, &s, &tmp, &m, &n);
     printf("Encoding message:  ");
