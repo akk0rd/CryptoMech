@@ -1,6 +1,6 @@
 GCC	= gcc -Wall
-SOURCE	= rabin.c
-OBJECT	= rabin
+SOURCE	= barrett.c
+OBJECT	= barrett
 DEPENDS = bignum.c
 FLAGS = OPTIMIZE
 DEBUG = -g
