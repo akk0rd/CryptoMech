@@ -5,6 +5,7 @@
 #include "bignum.h"
 
 #define SIZE    512
+#define SIZE_M    128
 
 size_t log2_4_int( size_t n )  
 {    
@@ -99,30 +100,58 @@ int jacobi(const mbedtls_mpi* A, const mbedtls_mpi* N) {
     }
     return ans;
 }
-//k = 1/2 (1/4 (p - 1) (q - 1) + 1
-int calculate_k()
+//k = 1/2 (1/4 (p - 1) (q - 1) + 1)
+int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
 {
-    
+    mbedtls_mpi pm1, qm1, n, x1, r, x0, tmp;
+    mbedtls_mpi_init(&pm1);
+    mbedtls_mpi_init(&qm1);
+    mbedtls_mpi_init(&tmp);
+
+    mbedtls_mpi_sub_int(&pm1, P, 1);        // p-1
+    mbedtls_mpi_sub_int(&qm1, Q, 1);        // q-1
+    mbedtls_mpi_mul_mpi(&r, &pm1, &qm1);    // (p-1)(q-1)
+    mbedtls_mpi_mul_int(&tmp, &r, 1/4);     // 1/4(p-1)(q-1)
+    mbedtls_mpi_sub_mpi(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
+    mbedtls_mpi_mul_int(&tmp, &r, 1/2);     // 1/2 (1/4 (p-1)(q-1) + 1)
+
 }
+
+
 int main()
 {
-    mbedtls_mpi p, q, n, x1, r, x0, tmp;
-    unsigned char val;
-    int bit;
+    mbedtls_mpi p, q, n, s, m, r, tmp;
 
     mbedtls_mpi_init(&n);
     mbedtls_mpi_init(&p);
     mbedtls_mpi_init(&q);
     mbedtls_mpi_init(&r);
-    mbedtls_mpi_init(&x0);
-    mbedtls_mpi_init(&x1);
+    mbedtls_mpi_init(&s);
+    mbedtls_mpi_init(&m);
     mbedtls_mpi_init(&tmp);
 
     pick_key(&p,&q,&n);
 
-    printf("%i\n",jacobi(&p,&q));
-    
+    do{
+        mbedtls_mpi_fill_random(&s, SIZE_M, myrand, NULL);
+    }while(jacobi(&s,&n) != -1);
 
+    char msg[2048];
+    scanf("%s", msg);
+    mbedtls_mpi_read_string(&m,16,msg);
+
+    int c1;
+    switch(jacobi(&m,&n)){
+        case(1):
+            c1 = 0;
+            break;
+        case(-1):
+            c1 = 1;
+            break;
+    }
+
+
+    mbedtls_mpi_write_file(NULL, &m, 10, NULL );
 
     return 0;
 }

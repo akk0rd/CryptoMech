@@ -597,7 +597,6 @@ cleanup:
     return( ret );
 }
 
-#if defined(MBEDTLS_FS_IO)
 /*
  * Read X from an opened file
  */
@@ -668,7 +667,6 @@ cleanup:
 
     return( ret );
 }
-#endif /* MBEDTLS_FS_IO */
 
 /*
  * Import X from unsigned binary data, big endian
