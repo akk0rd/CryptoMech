@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "bignum.h"
 
 #define SIZE    512
@@ -103,17 +104,18 @@ int jacobi(const mbedtls_mpi* A, const mbedtls_mpi* N) {
 //k = 1/2 (1/4 (p - 1) (q - 1) + 1)
 int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
 {
-    mbedtls_mpi pm1, qm1, tmp;
+    mbedtls_mpi pm1, qm1, tmp, r;
     mbedtls_mpi_init(&pm1);
     mbedtls_mpi_init(&qm1);
     mbedtls_mpi_init(&tmp);
+    mbedtls_mpi_init(&r);
 
     mbedtls_mpi_sub_int(&pm1, P, 1);        // p-1
     mbedtls_mpi_sub_int(&qm1, Q, 1);        // q-1
     mbedtls_mpi_mul_mpi(&r, &pm1, &qm1);    // (p-1)(q-1)
     mbedtls_mpi_mul_int(&tmp, &r, 1/4);     // 1/4(p-1)(q-1)
     mbedtls_mpi_sub_mpi(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
-    mbedtls_mpi_mul_int(&R, &r, 1/2);     // 1/2 (1/4 (p-1)(q-1) + 1)
+    mbedtls_mpi_mul_int(&R, &r, 1/2);       // 1/2 (1/4 (p-1)(q-1) + 1)
 
 }
 
@@ -134,17 +136,6 @@ int encoding(mbedtls_mpi* C, mbedtls_mpi* c2, const mbedtls_mpi* S,
     mbedtls_mpi_exp_mod(C, &ms, &a, N, NULL);   // C = M`^ 2 mon N
     mbedtls_mpi_mod_mpi(c2, &ms, &a);           // c2 = M` mod 2
 }
-
-int decoding(mbedtls_mpi* M, const mbedtls_mpi* k, const mbedtls_mpi* c,
-    const mbedtls_mpi* c1, const mbedtls_mpi*c2, const mbedtls_mpi* n)
-    {
-         mbedtls_mpi p, q, n, s, m, r, tmp, c, c2;
-
-    mbedtls_mpi_init(&n);
-    mbedtls_mpi_init(&p);
-    mbedtls_mpi_init(&q);
-    mbedtls_mpi_init(&r);
-    }
 
 int main()
 {
@@ -182,71 +173,7 @@ int main()
 
     tmp.p = &c1;
     encoding(&c, &c2, &s, &tmp, &m, &n);
-    mbedtls_mpi_write_file(NULL, &m, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &c, 16, NULL );
 
     return 0;
 }
-/*
-int main()
-{
-    mbedtls_mpi p, q, n, x1, r, x0, tmp;
-    unsigned char val;
-    int bit;
-
-    mbedtls_mpi_init(&n);
-    mbedtls_mpi_init(&p);
-    mbedtls_mpi_init(&q);
-    mbedtls_mpi_init(&r);
-    mbedtls_mpi_init(&x0);
-    mbedtls_mpi_init(&x1);
-    mbedtls_mpi_init(&tmp);
-
-    pick_key(&p, &q, &n);
-
-    mbedtls_mpi_read_string( &r, 10, "0");
-    while (!mbedtls_mpi_cmp_int_(&r, 1)) {
-        mbedtls_mpi_fill_random(&x1, SIZE, myrand, NULL);
-        mbedtls_mpi_gcd(&r, &n, &x1);
-    }
-    mbedtls_mpi_free(&r);
-
-    mbedtls_mpi_mul_mpi(&tmp, &x1, &x1);
-    mbedtls_mpi_mod_mpi(&x0, &tmp, &n);
-
-    bit  = 0;
-
-    for ( ; ; ) {
-        mbedtls_mpi_mul_mpi(&tmp, &x0, &x0);
-        mbedtls_mpi_mod_mpi(&x1, &tmp, &n);
-#ifdef OPTIMIZE
-        size_t j;
-        for(j = 0; j < log2_4_int(mbedtls_mpi_bitlen(&x1)); j++){
-#endif
-        if (bit == 0) {
-            val = 0;
-        }
-#ifndef OPTIMIZE
-        if ( mbedtls_mpi_get_bit(&x1, 0)) {
-#else
-        if ( mbedtls_mpi_get_bit(&x1, j)) {
-#endif        
-            val |= (1 << bit);
-        }
-
-        bit++;
-        if (bit == 8) {
-            //(void)printf ("%02x", val);
-            (void)printf ("%03i", val);
-            bit = 0;
-        }
-#ifdef OPTIMIZE      
-        }
-#endif
-
-        mbedtls_mpi_copy(&x0, &x1);
-    }
-
-    fflush(stdout);
-    return(0);
-}
-*/
