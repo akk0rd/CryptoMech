@@ -1,13 +1,11 @@
 GCC	= gcc -Wall
-SOURCE	= bbs.c
-OBJECT	= bbs
+SOURCE	= rabin.c
+OBJECT	= rabin
 DEPENDS = bignum.c
 FLAGS = OPTIMIZE
 DEBUG = -g
 
-fast:
+all:
 	$(GCC) $(SOURCE) $(DEPENDS) -o $(OBJECT) -D $(FLAGS)
-slow:
-	$(GCC) $(SOURCE) $(DEPENDS) -o $(OBJECT)  
 clean:
 	rm -rf $(OBJECT)
