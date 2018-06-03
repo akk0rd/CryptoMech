@@ -173,7 +173,12 @@ int main()
 
     tmp.p = &c1;
     encoding(&c, &c2, &s, &tmp, &m, &n);
+    printf("Encoding message:  ");
     mbedtls_mpi_write_file(NULL, &c, 16, NULL );
+    printf("C1: %i\n", c1);
+    printf("C2: ");
+    mbedtls_mpi_write_file(NULL, &c2, 16, NULL );
+    
 
     return 0;
 }
