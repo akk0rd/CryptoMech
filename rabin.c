@@ -6,7 +6,7 @@
 #include "bignum.h"
 
 #define SIZE    512
-#define SIZE_M    128
+#define SIZE_M   64
 
 static int myrand( void *rng_state, unsigned char *output, size_t len )
 {
@@ -108,7 +108,7 @@ int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
     mbedtls_mpi_mul_mpi(&r, &pm1, &qm1);    // (p-1)(q-1)
     mbedtls_mpi_div_int(&tmp, NULL, &r, 4);     // 1/4(p-1)(q-1)
     mbedtls_mpi_free(&r);
-    mbedtls_mpi_sub_int(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
+    mbedtls_mpi_add_int(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
     mbedtls_mpi_div_int(R, NULL, &r, 2);       // 1/2 (1/4 (p-1)(q-1) + 1)
 
 }
@@ -156,7 +156,7 @@ int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
             mbedtls_mpi_div_int(M, NULL, &r, 2);
             break;
         case(1):
-            mbedtls_mpi_sub_mpi(&r, &N, &d);
+            mbedtls_mpi_sub_mpi(&r, N, &d);
             mbedtls_mpi_div_int(&tmp, NULL, &r, 4);
             mbedtls_mpi_sub_int(&r, &tmp, 1);
             mbedtls_mpi_div_int(M, NULL, &r, 2);
@@ -167,7 +167,7 @@ int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
             mbedtls_mpi_div_int(M, NULL, &r, 2);
             break;
         case(3):
-            mbedtls_mpi_sub_mpi(&r, &N, &d);
+            mbedtls_mpi_sub_mpi(&r, N, &d);
             mbedtls_mpi_div_int(&tmp, NULL, &r, 2);
             mbedtls_mpi_sub_int(&r, &tmp, 1);
             mbedtls_mpi_div_int(M, NULL, &r, 2);
@@ -191,6 +191,9 @@ int main()
     mbedtls_mpi_init(&tmp);
 
     pick_key(&p,&q,&n);
+    //mbedtls_mpi_read_string(&p,10,"7");
+    //mbedtls_mpi_read_string(&q,10,"13");
+    //mbedtls_mpi_read_string(&n,10,"91");
 
     do{
         mbedtls_mpi_fill_random(&s, SIZE_M, myrand, NULL);
@@ -210,10 +213,12 @@ int main()
             break;
     }
     calculate_k(&k, &p, &q);
-    tmp.p = &c1;
+    sprintf(msg, "%d", c1);
+    mbedtls_mpi_read_string(&tmp,10,msg);
     encoding(&c, &c2, &s, &tmp, &m, &n);
+    decoding(&op, &k, &c, &c1, &c2, &n);
     printf("Encoding message:  ");
-    mbedtls_mpi_write_file(NULL, &c, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &op, 16, NULL );
     printf("C1: %i\n", c1);
     printf("C2: ");
     mbedtls_mpi_write_file(NULL, &c2, 16, NULL );
