@@ -48,6 +48,7 @@ int pick_key(mbedtls_mpi* P, mbedtls_mpi* Q, mbedtls_mpi* N)
         mbedtls_mpi_mod_int(&res, Q, 8);
     }
     mbedtls_mpi_mul_mpi(N, P, Q);
+    return 0;
 }
 
 int jacobi(const mbedtls_mpi* A, const mbedtls_mpi* N) {
@@ -87,7 +88,7 @@ int jacobi(const mbedtls_mpi* A, const mbedtls_mpi* N) {
         ans = jacobi(&int2, N)*jacobi(&tmp, N);
     }
     else{
-        int cong_a,cong_n;
+        mbedtls_mpi_uint cong_a,cong_n;
         mbedtls_mpi_mod_int(&cong_a, A, 4);
         mbedtls_mpi_mod_int(&cong_n, N, 4);
         ans = ( cong_a == 3 && cong_n == 3 ) ? -jacobi(N,A) : jacobi(N,A);
@@ -111,12 +112,13 @@ int calculate_k(mbedtls_mpi* R, const mbedtls_mpi* P, const mbedtls_mpi* Q)
     mbedtls_mpi_add_int(&r, &tmp, 1);       // 1/4 (p-1)(q-1) + 1
     mbedtls_mpi_div_int(R, NULL, &r, 2);       // 1/2 (1/4 (p-1)(q-1) + 1)
 
+    return 0;
 }
 
 int encoding(mbedtls_mpi* C, mbedtls_mpi* c2, const mbedtls_mpi* S, 
     const mbedtls_mpi* C1, const mbedtls_mpi* M, const mbedtls_mpi* N)
 {
-     mbedtls_mpi a, b, n, s, ms, r, tmp;
+     mbedtls_mpi a, b, ms;
 
     mbedtls_mpi_init(&a);
     mbedtls_mpi_init(&b);
@@ -129,6 +131,8 @@ int encoding(mbedtls_mpi* C, mbedtls_mpi* c2, const mbedtls_mpi* S,
     mbedtls_mpi_read_string(&a , 10, "2");
     mbedtls_mpi_exp_mod(C, &ms, &a, N, NULL);   // C = M`^ 2 mon N
     mbedtls_mpi_mod_mpi(c2, &ms, &a);           // c2 = M` mod 2
+
+    return 0;
 }
 int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
     const int* C1, const mbedtls_mpi* C2, const mbedtls_mpi* N)
@@ -147,7 +151,7 @@ int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
      * M = (D_1/2-1)/2 if D_1=2pmod{4}
      * M = ((N-D_1/2-1)/2 if D_1=3pmod{4}
     **/
-    int res;
+    mbedtls_mpi_uint res;
     mbedtls_mpi_mod_int(&res, &d, 4);
     switch(res){
         case(0):
@@ -173,6 +177,8 @@ int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
             mbedtls_mpi_div_int(M, NULL, &r, 2);
             break;
     }
+
+    return 0;
     }
 
 int main()
@@ -217,8 +223,12 @@ int main()
     mbedtls_mpi_read_string(&tmp,10,msg);
     encoding(&c, &c2, &s, &tmp, &m, &n);
     decoding(&op, &k, &c, &c1, &c2, &n);
+    printf("P:  ");
+    mbedtls_mpi_write_file(NULL, &p, 16, NULL );
+    printf("Q:  ");
+    mbedtls_mpi_write_file(NULL, &q, 16, NULL );
     printf("Encoding message:  ");
-    mbedtls_mpi_write_file(NULL, &op, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &c, 16, NULL );
     printf("C1: %i\n", c1);
     printf("C2: ");
     mbedtls_mpi_write_file(NULL, &c2, 16, NULL );
