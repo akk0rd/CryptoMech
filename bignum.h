@@ -28,9 +28,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined(MBEDTLS_FS_IO)
 #include <stdio.h>
-#endif
+
 
 #define MBEDTLS_ERR_MPI_FILE_IO_ERROR                     -0x0002  /**< An error occurred while reading from or writing to a file. */
 #define MBEDTLS_ERR_MPI_BAD_INPUT_DATA                    -0x0004  /**< Bad input parameters to function. */
@@ -377,7 +376,6 @@ int mbedtls_mpi_read_string( mbedtls_mpi *X, int radix, const char *s );
 int mbedtls_mpi_write_string( const mbedtls_mpi *X, int radix,
                               char *buf, size_t buflen, size_t *olen );
 
-#if defined(MBEDTLS_FS_IO)
 /**
  * \brief          Read MPI from a line in an opened file
  *
@@ -413,7 +411,6 @@ int mbedtls_mpi_read_file( mbedtls_mpi *X, int radix, FILE *fin );
  * \note           Set fout == NULL to print X on the console.
  */
 int mbedtls_mpi_write_file( const char *p, const mbedtls_mpi *X, int radix, FILE *fout );
-#endif /* MBEDTLS_FS_IO */
 
 /**
  * \brief          Import X from unsigned binary data, big endian
