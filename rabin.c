@@ -162,6 +162,13 @@ int encoding(mbedtls_mpi* C, mbedtls_mpi* R, mbedtls_mpi* S,mbedtls_mpi* U,
 
     return 0;
 }
+
+int asn1encode(const mbedtls_mpi* N, const mbedtls_mpi* R, const mbedtls_mpi* S, const mbedtls_mpi* P, const mbedtls_mpi* Q, const mbedtls_mpi* U)
+{
+    printf("\x30\x3a");
+    mbedtls_mpi_write_file(NULL, N, 10, NULL );
+
+}
 int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
     const int* C1, const mbedtls_mpi* C2, const mbedtls_mpi* N)
     {
@@ -211,6 +218,7 @@ int decoding(mbedtls_mpi* M, const mbedtls_mpi* K, const mbedtls_mpi* C,
 
 int main()
 {
+    FILE *f = fopen("ans1struct", "w");
     mbedtls_mpi p, q, n, s, m, k, tmp, c, c1, c2, op, r, u;
 
     mbedtls_mpi_init(&n);
@@ -237,14 +245,28 @@ int main()
     calculate_k(&k, &p, &q);
     encoding(&c, &r, &s, &u, &m, &n, &p, &q);
     // decoding(&op, &k, &c, &c1, &c2, &n);
-    printf("N:  ");
-    mbedtls_mpi_write_file(NULL, &n, 16, NULL );
-    printf("R:  ");
-    mbedtls_mpi_write_file(NULL, &r, 16, NULL );
-    printf("S:  ");
-    mbedtls_mpi_write_file(NULL, &s, 16, NULL );
-    printf("Encoding message:  ");
-    mbedtls_mpi_write_file(NULL, &c, 16, NULL );
+
+    printf("asn1=SEQUENCE\n\n");
+    printf("modulus = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &n, 10, NULL );
+    printf("r = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &r, 10, NULL );
+    printf("s = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &s, 10, NULL );
+    printf("p = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &p, 10, NULL );
+    printf("q = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &q, 10, NULL );
+    printf("u = INTEGER:");
+    mbedtls_mpi_write_file(NULL, &u, 10, NULL );
+    // printf("N:  ");
+    // mbedtls_mpi_write_file(NULL, &n, 16, NULL );
+    // printf("R:  ");
+    // mbedtls_mpi_write_file(NULL, &r, 16, NULL );
+    // printf("S:  ");
+    // mbedtls_mpi_write_file(NULL, &s, 16, NULL );
+    // printf("Encoding message:  ");
+    // mbedtls_mpi_write_file(NULL, &c, 16, NULL );
 
     return 0;
 }
